@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+
+# Show help message
+show_help() {
+    cat <<EOF
+Usage: ./sync <bucket-name> <file-prefix>
+
+Syncs generated random files to an S3 bucket.
+
+Arguments:
+  bucket-name   The name of the S3 bucket where the files will be uploaded.
+  file-prefix   The prefix for the generated random files (used in naming).
+
+Example:
+  ./sync my-bucket file-prefix
+EOF
+}
+
+# Check if help is requested
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Check if the bucket name is provided
+if [ -z "$1" ]; then
+    read -p "Enter the bucket name: " BUCKET_NAME
+else
+    BUCKET_NAME=$1
+fi
+
+# Check if the file prefix is provided
+if [ -z "$2" ]; then
+    read -p "Enter the file prefix: " FILENAME_PREFIX
+else
+    FILENAME_PREFIX=$2
+fi
+
+# Validate inputs
+if [ -z "$BUCKET_NAME" ] || [ -z "$FILENAME_PREFIX" ]; then
+    echo "Error: Both bucket name and file prefix are required."
+    echo "Run './sync --help' for usage information."
+    exit 1
+fi
+
+# Define output directory
+OUTPUT_DIR="/tmp/s3-bash-scripts"
+
+# Clean up any existing output directory
+rm -rf "$OUTPUT_DIR"
+
+# Create the output directory
+mkdir -p "$OUTPUT_DIR"
+
+# Generate a random number to decide how many files to create (between 5 to 10)
+NUM_FILES=$((RANDOM % 6 + 5))
+
+# Generate random files
+for ((i=1; i<=$NUM_FILES; i++)); do
+    FILENAME="$OUTPUT_DIR/${FILENAME_PREFIX}_$i.txt"
+    dd if=/dev/urandom of="$FILENAME" bs=1024 count=$((RANDOM % 1024 + 1)) 2>/dev/null
+done
+
+# Show directory structure of the generated files
+echo "Generated files:"
+tree "$OUTPUT_DIR"
+
+# Sync files to the specified S3 bucket
+echo "Syncing files to S3 bucket: s3://$BUCKET_NAME/files/"
+
+aws s3 sync "$OUTPUT_DIR" "s3://$BUCKET_NAME/files"
+
+echo "Sync completed. $NUM_FILES files uploaded to s3://$BUCKET_NAME/files/"
+
+:  ./sync 
+Enter the bucket name: oiusafkjh32452543986sdfasdf
+Enter the file prefix: myprefixtest
+Generated files:
+/tmp/s3-bash-scripts
+├── myprefixtest_1.txt
+├── myprefixtest_2.txt
+├── myprefixtest_3.txt
+├── myprefixtest_4.txt
+├── myprefixtest_5.txt
+├── myprefixtest_6.txt
+├── myprefixtest_7.txt
+└── myprefixtest_8.txt
+
+0 directories, 8 files
+Syncing files to S3 bucket: s3://oiusafkjh32452543986sdfasdf/files/
+upload: ../../../../../../tmp/s3-bash-scripts/myprefixtest_6.txt to s3://oiusafkjh32452543986sdfasdf/files/myprefixtest_6.txt
+upload: ../../../../../../tmp/s3-bash-scripts/myprefixtest_8.txt to s3://oiusafkjh32452543986sdfasdf/files/myprefixtest_8.txt
+upload: ../../../../../../tmp/s3-bash-scripts/myprefixtest_2.txt to s3://oiusafkjh32452543986sdfasdf/files/myprefixtest_2.txt
+upload: ../../../../../../tmp/s3-bash-scripts/myprefixtest_7.txt to s3://oiusafkjh32452543986sdfasdf/files/myprefixtest_7.txt
+upload: ../../../../../../tmp/s3-bash-scripts/myprefixtest_3.txt to s3://oiusafkjh32452543986sdfasdf/files/myprefixtest_3.txt
+upload: ../../../../../../tmp/s3-bash-scripts/myprefixtest_1.txt to s3://oiusafkjh32452543986sdfasdf/files/myprefixtest_1.txt
+upload: ../../../../../../tmp/s3-bash-scripts/myprefixtest_4.txt to s3://oiusafkjh32452543986sdfasdf/files/myprefixtest_4.txt
+upload: ../../../../../../tmp/s3-bash-scripts/myprefixtest_5.txt to s3://oiusafkjh32452543986sdfasdf/files/myprefixtest_5.txt
+Sync completed. 8 files uploaded to s3://oiusafkjh32452543986sdfasdf/files/
+'

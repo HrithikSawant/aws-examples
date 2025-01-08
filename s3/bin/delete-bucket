@@ -1,0 +1,43 @@
+#! /usr/bin/env bash
+
+# Show help message
+show_help() {
+    cat <<EOF
+Usage: ./delete-bucket <bucket-name>
+
+Delete an S3 bucket in AWS.
+
+Arguments:
+  bucket-name   The name of the S3 bucket to delete.
+
+Example:
+  ./delete-bucket my-bucket-name
+
+If no arguments are provided, the script will prompt for the bucket name interactively.
+EOF
+}
+
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+if [ -z "$1" ]; then
+    read -p "Enter the bucket name to delete: " BUCKET_NAME
+else
+    BUCKET_NAME=$1
+fi
+
+
+if [ -z "$BUCKET_NAME" ]; then
+    echo "Error: Bucket name is required."
+    echo "Run './delete-bucket --help' for usage information."
+    exit 1
+fi
+
+aws s3api delete-bucket \
+    --bucket "$BUCKET_NAME" \
+    --output text
+
+echo "BUCKET_NAME: $BUCKET_NAME"

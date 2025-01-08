@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+# Show help message
+show_help() {
+    cat <<EOF
+Usage: ./list-buckets [OPTIONS]
+
+List S3 buckets sorted by creation date. Options:
+
+  -a, --all        List all buckets sorted by creation date (name and creation date).
+  --top-5          Show the top 5 most recently created buckets (only names).
+  -h, --help       Show this help message.
+
+Example:
+  ./list-buckets            # Lists all buckets with creation date.
+  ./list-buckets --top-5    # Shows only the top 5 most recently created buckets (names only).
+EOF
+}
+
+# Check if help is requested
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Handle the "--top-5" option
+if [[ "$1" == "--top-5" ]]; then
+    echo "== Top 5 Most Recently Created Buckets =="
+    aws s3api list-buckets | jq -r '.Buckets | sort_by(.CreationDate) | reverse | .[0:5] | .[] | .Name'
+    exit 0
+fi
+
+# Handle the "--all" or default case
+if [[ "$1" == "-a" || "$1" == "--all" ]]; then
+    echo "== All Buckets Sorted by Creation Date =="
+    aws s3api list-buckets | jq -r '.Buckets | sort_by(.CreationDate) | reverse | .[] | "\(.Name) (\(.CreationDate))"'
+else
+    echo "== Most Recently Created Bucket =="
+    RECENT_BUCKET=$(aws s3api list-buckets | jq -r '.Buckets | sort_by(.CreationDate) | reverse | .[0] | .Name')
+    echo "$RECENT_BUCKET"
+fi

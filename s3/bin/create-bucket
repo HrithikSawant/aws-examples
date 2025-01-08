@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+# Show help message
+show_help() {
+    cat <<EOF
+Usage: ./create-bucket <bucket-name> <region>
+
+Create an S3 bucket with object lock enabled in the specified AWS region.
+
+Arguments:
+  bucket-name   The name of the S3 bucket to create.
+  region        The AWS region where the bucket will be created.
+
+Example:
+  ./create-bucket my-bucket-name ap-south-1
+EOF
+}
+
+# Check if help is requested
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Prompt for input if not provided as arguments
+if [ -z "$1" ]; then
+    read -p "Enter the bucket name: " BUCKET_NAME
+else
+    BUCKET_NAME=$1
+fi
+
+if [ -z "$2" ]; then
+    read -p "Enter the AWS region: " REGION
+else
+    REGION=$2
+fi
+
+# Validate input
+if [ -z "$BUCKET_NAME" ] || [ -z "$REGION" ]; then
+    echo "Error: Both bucket name and region are required."
+    echo "Run './create-bucket --help' for usage information."
+    exit 1
+fi
+
+# Create S3 bucket
+BUCKET_URL=$(aws s3api create-bucket \
+    --bucket "$BUCKET_NAME" \
+    --object-lock-enabled-for-bucket \
+    --create-bucket-configuration LocationConstraint="$REGION" \
+    --query Location \
+    --output text)
+
+echo "BUCKET_URL: $BUCKET_URL"
+echo "BUCKET_NAME: $BUCKET_NAME"

@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+# Show help message
+show_help() {
+    cat <<EOF
+Usage: ./put-object <bucket-name> <file-name>
+
+Upload a file to an S3 bucket.
+
+Arguments:
+  bucket-name   The name of the S3 bucket where the file will be uploaded.
+  file-name     The file path of the file to upload.
+
+Example:
+  ./put-object my-bucket-name myfile.txt
+EOF
+}
+
+# Check if help is requested
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Check if both arguments are provided, otherwise prompt for input
+if [ -z "$1" ]; then
+    read -p "Enter the bucket name: " BUCKET_NAME
+else
+    BUCKET_NAME=$1
+fi
+
+if [ -z "$2" ]; then
+    read -p "Enter the file name (path): " FILENAME
+else
+    FILENAME=$2
+fi
+
+# Validate inputs
+if [ -z "$BUCKET_NAME" ] || [ -z "$FILENAME" ]; then
+    echo "Error: Both bucket name and file name are required."
+    echo "Run './put-object --help' for usage information."
+    exit 1
+fi
+
+# Ensure the file exists before proceeding
+if [ ! -f "$FILENAME" ]; then
+    echo "Error: File '$FILENAME' does not exist."
+    exit 1
+fi
+
+OBJECT_KEY=$(basename "$FILENAME")
+
+echo "== Uploading '$FILENAME' to S3 bucket '$BUCKET_NAME' as object key '$OBJECT_KEY' =="
+
+# Upload the file to the S3 bucket
+aws s3api put-object \
+    --bucket "$BUCKET_NAME" \
+    --key "$OBJECT_KEY" \
+    --body "$FILENAME" 
+
+echo "File uploaded successfully to s3://$BUCKET_NAME/$OBJECT_KEY"

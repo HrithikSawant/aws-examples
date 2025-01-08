@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+# Show help message
+show_help() {
+    cat <<EOF
+Usage: ./list-objects <bucket-name>
+
+List objects in the specified S3 bucket.
+
+Arguments:
+  bucket-name   The name of the S3 bucket whose objects you want to list.
+
+Example:
+  ./list-objects my-bucket-name
+EOF
+}
+
+# Check if help is requested
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Prompt for the bucket name if not provided as an argument
+if [ -z "$1" ]; then
+    read -p "Enter the bucket name: " BUCKET_NAME
+else
+    BUCKET_NAME=$1
+fi
+
+# Validate the bucket name
+if [ -z "$BUCKET_NAME" ]; then
+    echo "Error: Bucket name is required."
+    echo "Run './list-objects --help' for usage information."
+    exit 1
+fi
+
+echo "== Listing Objects in Bucket: $BUCKET_NAME =="
+
+# List objects in the specified bucket
+aws s3api list-object-v2 --bucket "$BUCKET_NAME" --output table
