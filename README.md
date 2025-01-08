@@ -4,6 +4,7 @@ This repository contains a collection of AWS service examples and use cases, dem
 
 ## Contents
 - **[CLI Installation Scripts](https://github.com/HrithikSawant/aws-examples/blob/main/bin/README.md)**: Examples to install commonly used CLI tools: AWS CLI, PowerShell CLI, and Terraform CLI.
+- **[S3 Examples](https://github.com/HrithikSawant/aws-examples/blob/main/s3/README.md)**: Demonstrations of creating, managing, and interacting with Amazon S3 buckets.
 
 ## Prerequisites
 
