@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# upload_file
+# Usage: ./bin/upload_file <bucket-name> <folder-name> <file-path>
+
+BUCKET_NAME=$1
+FOLDER_NAME=$2
+FILE_PATH=$3
+
+if [ -z "$BUCKET_NAME" ] || [ -z "$FOLDER_NAME" ] || [ -z "$FILE_PATH" ]; then
+  echo "Please provide bucket name, folder name, and file path."
+  exit 1
+fi
+
+aws s3 cp $FILE_PATH s3://$BUCKET_NAME/$FOLDER_NAME/
+echo "File '$FILE_PATH' uploaded to '$FOLDER_NAME' in bucket $BUCKET_NAME."

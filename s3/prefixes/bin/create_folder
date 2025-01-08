@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# create_folder
+# Usage: ./bin/create_folder <bucket-name> <folder-name>
+
+BUCKET_NAME=$1
+FOLDER_NAME=$2
+
+if [ -z "$BUCKET_NAME" ] || [ -z "$FOLDER_NAME" ]; then
+  echo "Please provide both bucket name and folder name."
+  exit 1
+fi
+
+aws s3api put-object --bucket $BUCKET_NAME --key $FOLDER_NAME/
+echo "Folder (prefix) '$FOLDER_NAME' created in bucket $BUCKET_NAME."

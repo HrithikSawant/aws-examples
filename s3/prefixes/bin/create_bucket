@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# create_bucket
+# Usage: ./bin/create_bucket <bucket-name>
+
+BUCKET_NAME=$1
+
+if [ -z "$BUCKET_NAME" ]; then
+  echo "Please provide a bucket name."
+  exit 1
+fi
+
+aws s3 mb s3://$BUCKET_NAME
+echo "Bucket $BUCKET_NAME created successfully."
