@@ -1,0 +1,19 @@
+{
+    "Statement": [
+       {
+          "Effect": "Allow",
+          "Principal": {
+             "AWS": "arn:aws:iam::<Account-ID>:user/<IAM-User-Name>"
+          },
+          "Action": [
+            "s3:ListBucket",
+            "s3:GetObject",
+            "s3:PutObject"
+          ],
+          "Resource": [
+            "arn:aws:s3:::bucket-policy-example-x7y9z3a",
+            "arn:aws:s3:::bucket-policy-example-x7y9z3a/*"
+          ]
+       }
+    ]
+  }
