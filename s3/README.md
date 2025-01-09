@@ -55,9 +55,9 @@ This directory contains examples and scripts to help you interact with Amazon S3
 
 4. [S3 etags](https://github.com/HrithikSawant/aws-examples/blob/main/s3/etags/README.md)
 
+5. [S3 metadata](https://github.com/HrithikSawant/aws-examples/blob/main/s3/metadata/README.md)
 
 ## Prerequisites
-
 To use these examples, ensure the following:
 
 - AWS CLI is installed and configured with valid credentials.
