@@ -53,6 +53,8 @@ This directory contains examples and scripts to help you interact with Amazon S3
 
 3. [S3 Bucket Policy Demo](https://github.com/HrithikSawant/aws-examples/blob/main/s3/bucket-policy/README.md)
 
+4. [S3 etags](https://github.com/HrithikSawant/aws-examples/blob/main/s3/etags/README.md)
+
 
 ## Prerequisites
 
