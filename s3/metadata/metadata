@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+
+# Display help information
+show_help() {
+    cat << EOF
+Usage: ${0##*/} [OPTIONS]
+
+Options:
+  create-bucket BUCKET_NAME     Create a new S3 bucket.
+  upload-file BUCKET_NAME FILE_PATH METADATA_KEY=METADATA_VALUE
+                                Upload a file to the S3 bucket with metadata.
+  get-metadata BUCKET_NAME FILE_NAME
+                                Retrieve metadata of a file from the S3 bucket.
+  cleanup BUCKET_NAME [FILE_NAME]
+                                Remove a file or the bucket (if FILE_NAME is omitted).
+  help                          Display this help message.
+
+Examples:
+  ${0##*/} create-bucket my-bucket
+  ${0##*/} upload-file my-bucket myfile.txt Planet=Mars
+  ${0##*/} get-metadata my-bucket myfile.txt
+  ${0##*/} cleanup my-bucket myfile.txt
+  ${0##*/} cleanup my-bucket
+EOF
+}
+
+# Check if AWS CLI is installed
+if ! command -v aws &> /dev/null; then
+    echo "Error: AWS CLI is not installed. Please install it first."
+    exit 1
+fi
+
+# Main script logic
+case "$1" in
+    create-bucket)
+        if [ -z "$2" ]; then
+            echo "Error: Bucket name is required."
+            show_help
+            exit 1
+        fi
+        BUCKET_NAME="$2"
+        aws s3 mb "s3://$BUCKET_NAME"
+        ;;
+
+    upload-file)
+        if [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
+            echo "Error: Bucket name, file path, and metadata are required."
+            show_help
+            exit 1
+        fi
+        BUCKET_NAME="$2"
+        FILE_PATH="$3"
+        METADATA="$4"
+        KEY=$(basename "$FILE_PATH")
+        aws s3api put-object --bucket "$BUCKET_NAME" --key "$KEY" --body "$FILE_PATH" --metadata "$METADATA"
+        ;;
+
+    get-metadata)
+        if [ -z "$2" ] || [ -z "$3" ]; then
+            echo "Error: Bucket name and file name are required."
+            show_help
+            exit 1
+        fi
+        BUCKET_NAME="$2"
+        FILE_NAME="$3"
+        aws s3api head-object --bucket "$BUCKET_NAME" --key "$FILE_NAME"
+        ;;
+
+    cleanup)
+        if [ -z "$2" ]; then
+            echo "Error: Bucket name is required."
+            show_help
+            exit 1
+        fi
+        BUCKET_NAME="$2"
+        if [ -z "$3" ]; then
+            echo "Deleting bucket: $BUCKET_NAME"
+            aws s3 rb "s3://$BUCKET_NAME" --force
+        else
+            FILE_NAME="$3"
+            echo "Deleting file: $FILE_NAME from bucket: $BUCKET_NAME"
+            aws s3 rm "s3://$BUCKET_NAME/$FILE_NAME"
+        fi
+        ;;
+
+    help|-h|--help)
+        show_help
+        ;;
+
+    *)
+        echo "Error: Invalid command."
+        show_help
+        exit 1
+        ;;
+esac
