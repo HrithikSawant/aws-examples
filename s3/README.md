@@ -51,6 +51,7 @@ This directory contains examples and scripts to help you interact with Amazon S3
 
 2. [S3 Bucket and Prefix Demo](https://github.com/HrithikSawant/aws-examples/blob/main/s3/prefixes/README.md)
 
+3. [S3 Bucket Policy Demo](https://github.com/HrithikSawant/aws-examples/blob/main/s3/bucket-policy/README.md)
 
 
 ## Prerequisites
