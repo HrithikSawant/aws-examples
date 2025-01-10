@@ -57,6 +57,8 @@ This directory contains examples and scripts to help you interact with Amazon S3
 
 5. [S3 metadata](https://github.com/HrithikSawant/aws-examples/blob/main/s3/metadata/README.md)
 
+6. [S3 checksums](https://github.com/HrithikSawant/aws-examples/blob/main/s3/checksums/README.md)
+
 ## Prerequisites
 To use these examples, ensure the following:
 
