@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+set -e
+# Uncomment below line to enable debugging
+# set -x
+
+echo "== Starting put-object-checksum script =="
+
+# Check if both bucket name and filename are provided
+if [ -z "$1" ]; then
+    echo "Error: Bucket name is required (e.g., ./put-object-checksum my-bucket-name filename)"
+    exit 1
+fi
+
+if [ -z "$2" ]; then
+    echo "Error: Filename is required (e.g., ./put-object-checksum my-bucket-name filename)"
+    exit 1
+fi
+
+# Define bucket name and filename (extracting just the base name of the file)
+BUCKET_NAME=$1
+FILE_PATH=$2
+FILE_NAME=$(basename "$FILE_PATH")  # Extracts the base file name
+
+# Validate if the file exists locally
+if [ ! -f "$FILE_PATH" ]; then
+    echo "Error: File '$FILE_PATH' does not exist."
+    exit 1
+fi
+
+echo "Uploading file '$FILE_NAME' to bucket '$BUCKET_NAME'..."
+
+# Calculate the SHA256 and MD5 checksums
+SHA256SUM=$(sha256sum "$FILE_PATH" | awk '{ print $1 }')
+MD5SUM=$(openssl dgst -md5 -binary "$FILE_PATH" | base64)
+
+echo "SHA256 Checksum: $SHA256SUM"
+echo "MD5 Checksum: $MD5SUM"
+
+# Upload the file to S3 with checksum metadata
+aws s3api put-object \
+  --bucket "$BUCKET_NAME" \
+  --key "$FILE_NAME" \
+  --body "$FILE_PATH" \
+  --metadata sha256sum="$SHA256SUM",md5sum="$MD5SUM"
+
+echo "File uploaded successfully with metadata."
+
+# Retrieve and display the object metadata from S3 to verify the checksum
+echo "Fetching metadata for object '$FILE_NAME'..."
+aws s3api head-object \
+  --bucket "$BUCKET_NAME" \
+  --key "$FILE_NAME"
+
+echo "== Finished put-object-checksum script =="
