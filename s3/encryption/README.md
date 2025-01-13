@@ -93,7 +93,7 @@ aws s3api put-object \
 An error occurred (InvalidArgument) when calling the PutObject operation: The calculated MD5 hash of the key did not match the hash that was provided.
 ```
 
-### 6. Successful Put Object with SSE-C
+### 6. Successful Put Object with SSE-C demo
 Generate a 256-bit encryption key and upload the file with SSE-C:
 ```sh
 openssl rand -out ssec.key 32
@@ -103,7 +103,7 @@ aws s3 cp hello.txt s3://encryption-fun-hrithik-fg654238/hello.txt \
 --sse-c-key fileb://ssec.key
 ```
 
-### 7. Download Object Encrypted with SSE-C
+### 7. Download Object Encrypted with SSE-C 
 Download the file from S3 using the same encryption key:
 ```sh
 aws s3 cp s3://encryption-fun-hrithik-fg654238/hello.txt hello.txt --sse-c AES256 --sse-c-key fileb://ssec.key
