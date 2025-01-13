@@ -61,6 +61,7 @@ This directory contains examples and scripts to help you interact with Amazon S3
 
 7. [S3 Server-Side Encryption (SSE) and Server-Side Encryption with Customer-Provided Keys (SSE-C)](https://github.com/HrithikSawant/aws-examples/blob/main/s3/encryption/README.md)
 
+8. [S3 Encrypting Data Locally](https://github.com/HrithikSawant/aws-examples/blob/main/s3/encryption-client/README.md)
 
 ## Prerequisites
 To use these examples, ensure the following:
