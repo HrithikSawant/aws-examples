@@ -63,6 +63,8 @@ This directory contains examples and scripts to help you interact with Amazon S3
 
 8. [S3 Encrypting Data Locally](https://github.com/HrithikSawant/aws-examples/blob/main/s3/encryption-client/README.md)
 
+9. [S3 Bucket ACL Demo](https://github.com/HrithikSawant/aws-examples/blob/main/s3/acl/README.md)
+
 ## Prerequisites
 To use these examples, ensure the following:
 
