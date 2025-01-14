@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+
+# Function to display help
+show_help() {
+    cat << EOF
+Usage: $0 [options]
+
+Options:
+  --bucket                Bucket name (required)
+  --key                   Object key (optional, for object-level ACLs)
+  --acl                   ACL preset (optional, e.g., private, public-read, public-read-write)
+  --block-public-acls     true/false (optional, for public access block)
+  --ignore-public-acls    true/false (optional, for public access block)
+  --block-public-policy   true/false (optional, for public access block)
+  --restrict-public-buckets true/false (optional, for public access block)
+  --access-control-policy JSON file (optional, for custom ACL policy)
+
+Examples:
+  $0 --bucket example-bucket --acl public-read
+  $0 --bucket example-bucket --block-public-acls true --ignore-public-acls false
+  $0 --bucket example-bucket --key example-object --acl private
+
+EOF
+}
+
+
+# Parse input arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        --bucket)
+            bucket="$2"
+            shift 2
+            ;;
+        --key)
+            key="$2"
+            shift 2
+            ;;
+        --acl)
+            acl="$2"
+            shift 2
+            ;;
+        --block-public-acls)
+            block_public_acls="$2"
+            shift 2
+            ;;
+        --ignore-public-acls)
+            ignore_public_acls="$2"
+            shift 2
+            ;;
+        --block-public-policy)
+            block_public_policy="$2"
+            shift 2
+            ;;
+        --restrict-public-buckets)
+            restrict_public_buckets="$2"
+            shift 2
+            ;;
+        --access-control-policy)
+            access_control_policy="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+# Prompt for required parameters if missing
+bucket=${bucket:-$(read -p "Enter bucket name: " val && echo $val)}
+block_public_acls=${block_public_acls:-$(read -p "Enter BlockPublicAcls (true/false): " val && echo $val)}
+ignore_public_acls=${ignore_public_acls:-$(read -p "Enter IgnorePublicAcls (true/false): " val && echo $val)}
+block_public_policy=${block_public_policy:-$(read -p "Enter BlockPublicPolicy (true/false): " val && echo $val)}
+restrict_public_buckets=${restrict_public_buckets:-$(read -p "Enter RestrictPublicBuckets (true/false): " val && echo $val)}
+
+# Execute commands
+if [[ -n "$block_public_acls" || -n "$ignore_public_acls" || -n "$block_public_policy" || -n "$restrict_public_buckets" ]]; then
+    echo "Setting public access block..."
+    aws s3api put-public-access-block \
+        --bucket "$bucket" \
+        --public-access-block-configuration "BlockPublicAcls=${block_public_acls},IgnorePublicAcls=${ignore_public_acls},BlockPublicPolicy=${block_public_policy},RestrictPublicBuckets=${restrict_public_buckets}"
+fi
+
+if [[ -n "$acl" ]]; then
+    if [[ -n "$key" ]]; then
+        echo "Setting object-level ACL..."
+        aws s3api put-object-acl --bucket "$bucket" --key "$key" --acl "$acl"
+    else
+        echo "Setting bucket-level ACL..."
+        aws s3api put-bucket-acl --bucket "$bucket" --acl "$acl"
+    fi
+fi
+
+if [[ -n "$access_control_policy" ]]; then
+    echo "Applying custom access control policy..."
+    if [[ -n "$key" ]]; then
+        aws s3api put-object-acl --bucket "$bucket" --key "$key" --access-control-policy "file://${access_control_policy}"
+    else
+        aws s3api put-bucket-acl --bucket "$bucket" --access-control-policy "file://${access_control_policy}"
+    fi
+fi
+
+# Print confirmation
+echo "Commands executed successfully for bucket: $bucket"
+if [[ -n "$key" ]]; then
+    echo "  Object Key: $key"
+fi
+if [[ -n "$acl" ]]; then
+    echo "  ACL: $acl"
+fi
+if [[ -n "$access_control_policy" ]]; then
+    echo "  Custom Policy File: $access_control_policy"
+fi
+
+
+# Fetch and display the public access block configuration
+echo "Fetching updated public access block configuration..."
+aws s3api get-public-access-block --bucket "$bucket" || echo "Public access block configuration not found."
+
+# Fetch and display the bucket ACL
+echo "Fetching bucket ACL..."
+aws s3api get-bucket-acl --bucket "$bucket" || echo "Bucket ACL not found."
