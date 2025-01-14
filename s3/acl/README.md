@@ -70,7 +70,7 @@ Fetching bucket ACL...
 
 To set the ownership of objects within the bucket to the bucket owner, use the following command:
 
-```sh
+```bash
 aws s3api put-bucket-ownership-controls --bucket acl-example-hrithik-fh54265345478 --ownership-controls="Rules=[{ObjectOwnership=BucketOwnerPreferred}]"
 ```
 
@@ -80,7 +80,7 @@ aws s3api put-bucket-ownership-controls --bucket acl-example-hrithik-fh542653454
 
 To fetch the **Canonical ID** of another AWS account (useful for cross-account access), you can run the following command:
 
-```sh
+```bash
 aws s3api list-buckets --query Owner.ID --output text
 ```
 
@@ -91,11 +91,10 @@ Alternatively, you can also find the **Canonical ID** in the AWS Console under *
 ### **Step 5: Change ACLs to Allow Access for a User in Another AWS Account**
 
 If you want to allow a user in another AWS account to access the bucket, you'll need to create and apply an ACL policy file. For example, the file `policy.json`
-```
 
 Then apply the policy to the bucket:
 
-```sh
+```bash
 aws s3api put-bucket-acl --bucket acl-example-hrithik-fh54265345478 --access-control-policy file:///path/to/policy.json
 ```
 
@@ -105,7 +104,7 @@ aws s3api put-bucket-acl --bucket acl-example-hrithik-fh54265345478 --access-con
 
 To test access from another AWS account, create a file and upload it to the bucket:
 
-```sh
+```bash
 touch bootcamp.txt
 aws s3 cp bootcamp.txt s3://acl-example-hrithik-fh54265345478
 aws s3 ls s3://acl-example-hrithik-fh54265345478
@@ -119,7 +118,7 @@ This will list the contents of the bucket, confirming access.
 
 Finally, you can delete the uploaded file and remove the bucket:
 
-```sh
+```bash
 aws s3 rm s3://acl-example-hrithik-fh54265345478/bootcamp.txt
 aws s3 rb s3://acl-example-hrithik-fh54265345478
 ```
