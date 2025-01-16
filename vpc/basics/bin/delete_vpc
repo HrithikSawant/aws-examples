@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+# VPC IGW SUBNET RT
+
+# Check if the argument is not provided
+if [ -z "$1" ]; then
+  echo "VPC ID argument not provided."
+else
+  export VPC_ID="$1"
+fi
+
+if [ -z "$2" ]; then
+  echo "Internet Gateway ID argument not provided."
+else
+  export IGW_ID="$2"
+fi
+
+if [ -z "$3" ] || [ -z "$4" ]; then
+  echo "Both Subnet IDs are required."
+else
+  export ASSOC_ID_1="$3"
+  export ASSOC_ID_2="$4"
+fi
+
+if [ -z "$5" ] || [ -z "$6" ]; then
+  echo "Both Subnet IDs are required."
+else
+  export SUBNET_ID_1="$5"
+  export SUBNET_ID_2="$6"
+fi
+
+if [ -z "$7" ]; then
+  echo "Route Table ID argument not provided."
+else
+  export RT_ID="$5"
+fi
+
+# Detach the IGW from the VPC
+echo "Detaching Internet Gateway $IGW_ID from VPC $VPC_ID..."
+aws ec2 detach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id $VPC_ID
+
+echo "Disassociating route table $RT_ID from subnet $SUBNET_ID_1 with Association ID: $ASSOC_ID_1"
+aws ec2 disassociate-route-table --association-id $ASSOC_ID_1
+
+echo "Disassociating route table $RT_ID from subnet $SUBNET_ID_2 with Association ID: $ASSOC_ID_2"
+aws ec2 disassociate-route-table --association-id $ASSOC_ID_2
+
+# Delete both subnets
+echo "Deleting subnet $SUBNET_ID_1..."
+aws ec2 delete-subnet --subnet-id $SUBNET_ID_1
+
+echo "Deleting subnet $SUBNET_ID_2..."
+aws ec2 delete-subnet --subnet-id $SUBNET_ID_2
+
+# Delete the route table (if needed, it's typically deleted with the VPC)
+# echo "Deleting route table $RT_ID..."
+# aws ec2 delete-route-table --route-table-id $RT_ID
+
+# Delete the VPC
+echo "Deleting VPC $VPC_ID..."
+aws ec2 delete-vpc --vpc-id $VPC_ID
+
+# Note: IGW is detach is not deleted
