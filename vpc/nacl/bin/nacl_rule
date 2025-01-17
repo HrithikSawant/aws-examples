@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+
+# Function to display help
+show_help() {
+    cat <<EOF
+Usage: $0 <options> <nacl-id> <rule-number> <protocol> <port-range> <cidr-block> <rule-action>
+
+Options:
+  --ingress      : Specify the rule is for ingress traffic.
+  --egress       : Specify the rule is for egress traffic.
+
+Parameters:
+  nacl-id        : Network ACL ID (e.g., nacl-xxxxxxxx)
+  rule-number    : Rule number (integer, e.g., 100)
+  protocol       : Protocol (e.g., -1 for all, tcp=6, udp=17)
+  port-range     : Port range (e.g., From=0,To=65535)
+  cidr-block     : CIDR block (e.g., 10.6.109.4/32)
+  rule-action    : Rule action (allow or deny)
+
+You can also set these values as environment variables (e.g., NACL_ID=..., RULE_NUMBER=..., etc.).
+EOF
+}
+
+# Check if the help flag is used
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+    show_help
+    exit 0
+fi
+
+# Check for ingress/egress option
+if [[ "$1" == "--ingress" ]]; then
+    direction="ingress"
+    shift
+elif [[ "$1" == "--egress" ]]; then
+    direction="egress"
+    shift
+else
+    echo "Error: You must specify either --ingress or --egress."
+    show_help
+    exit 1
+fi
+
+# Get inputs from command line arguments or environment variables
+nacl_id="${1:-$NACL_ID}"
+rule_number="${2:-$RULE_NUMBER}"
+protocol="${3:-$PROTOCOL}"
+port_range="${4:-$PORT_RANGE}"
+cidr_block="${5:-$CIDR_BLOCK}"
+rule_action="${6:-$RULE_ACTION}"
+
+# Prompt the user for missing parameters if they're not provided as arguments or environment variables
+if [ -z "$nacl_id" ]; then
+    read -p "Enter Network ACL ID (e.g., nacl-xxxxxxxx): " nacl_id
+fi
+if [ -z "$rule_number" ]; then
+    read -p "Enter Rule Number (e.g., 100): " rule_number
+fi
+if [ -z "$protocol" ]; then
+    read -p "Enter Protocol (e.g., -1 for all, tcp=6, udp=17): " protocol
+fi
+if [ -z "$port_range" ]; then
+    read -p "Enter Port Range (e.g., From=0,To=65535): " port_range
+fi
+if [ -z "$cidr_block" ]; then
+    read -p "Enter CIDR Block (e.g., 10.6.109.4/32): " cidr_block
+fi
+if [ -z "$rule_action" ]; then
+    read -p "Enter Rule Action (allow/deny): " rule_action
+fi
+
+# Validate inputs
+if [ -z "$nacl_id" ] || [ -z "$rule_number" ] || [ -z "$protocol" ] || [ -z "$port_range" ] || [ -z "$cidr_block" ] || [ -z "$rule_action" ]; then
+    echo "Error: Missing required parameters. Provide arguments or set environment variables."
+    exit 1
+fi
+
+# Create Network ACL entry
+echo "Running the following command:"
+echo "aws ec2 create-network-acl-entry \
+  --network-acl-id \"$nacl_id\" \
+  --$direction \
+  --rule-number \"$rule_number\" \
+  --protocol \"$protocol\" \
+  --port-range \"$port_range\" \
+  --cidr-block \"$cidr_block\" \
+  --rule-action \"$rule_action\""
+
+aws ec2 create-network-acl-entry \
+  --network-acl-id "$nacl_id" \
+  --$direction \
+  --rule-number "$rule_number" \
+  --protocol "$protocol" \
+  --port-range "$port_range" \
+  --cidr-block "$cidr_block" \
+  --rule-action "$rule_action"

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+# Function to display help message
+help() {
+  cat << EOF
+Usage: $0 [TEMPLATE_FILE] [STACK_NAME]
+
+Arguments:
+  TEMPLATE_FILE    Path to the CloudFormation template file (required)
+  STACK_NAME       Name of the CloudFormation stack (optional, defaults to 'MySampleStack')
+
+Examples:
+  $0 template.yaml MySampleStack-gj243754
+  $0 template.yaml
+
+Description:
+This script creates an AWS CloudFormation stack using the specified template file. 
+If no stack name is provided, the default name 'MySampleStack' is used.
+
+EOF
+  exit 1
+}
+
+# Check if --help is requested or no arguments are provided
+if [[ "$1" == "--help" || $# -eq 0 ]]; then
+  help
+fi
+
+# Variables
+TEMPLATE_FILE=$1
+STACK_NAME=${2:-MySampleStack} # Default stack name if not provided
+
+# Check if template file exists
+if [[ ! -f "$TEMPLATE_FILE" ]]; then
+  echo "Error: Template file '$TEMPLATE_FILE' not found!"
+  print_help
+fi
+
+# Create the stack
+echo "Creating CloudFormation stack '$STACK_NAME' using template '$TEMPLATE_FILE'..."
+aws cloudformation create-stack \
+  --stack-name "$STACK_NAME" \
+  --template-body file://"$TEMPLATE_FILE" \
+  --capabilities CAPABILITY_NAMED_IAM
+
+if [[ $? -eq 0 ]]; then
+  echo "Stack creation initiated successfully. Check the CloudFormation console for progress."
+else
+  echo "Failed to initiate stack creation."
+fi

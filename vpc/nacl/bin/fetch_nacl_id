@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+# Function to display help
+show_help() {
+    cat <<EOF
+Usage: $0 <vpc-id>
+
+Parameters:
+  vpc-id        : The ID of the VPC (e.g., vpc-xxxxxxxx)
+
+Description:
+  This script fetches the Network ACL ID associated with the specified VPC ID.
+
+Example:
+  $0 vpc-123abc45
+EOF
+}
+
+# Check if the help flag is used
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+    show_help
+    exit 0
+fi
+
+# Check if the VPC ID is provided as an argument
+if [ -z "$1" ]; then
+    echo "Error: VPC ID is required."
+    show_help
+    exit 1
+fi
+
+VPC_ID=$1
+
+# Get NACL ID for the given VPC ID
+NACL_ID=$(aws ec2 describe-network-acls --filters "Name=vpc-id,Values=$VPC_ID" --query "NetworkAcls[0].NetworkAclId" --output text)
+
+# Check if the NACL ID was found
+if [ "$NACL_ID" == "None" ]; then
+    echo "No Network ACL found for VPC ID: $VPC_ID"
+else
+    echo "NACL_ID: $NACL_ID"
+fi
