@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+# Function to show help message
+show_help() {
+    cat <<EOF
+Usage: $0 <route-table-id> <vpc-id> <subnet-id(s)>
+
+Delete a route table, disassociate it from one or more subnets, and optionally remove tags.
+
+Parameters:
+  route-table-id    : The ID of the route table to delete (e.g., rtb-xxxxxxxx).
+  vpc-id            : The VPC ID where the route table exists (e.g., vpc-xxxxxxxx).
+  subnet-id(s)      : One or more subnet IDs to disassociate the route table from (e.g., subnet-xxxxxxxx subnet-yyyyyyyy).
+
+Example:
+  ./delete-route-table.sh rtb-xxxxxxxxxxxxxxxxx vpc-xxxxxxxxxxxxxxxxx subnet-xxxxxxxxxxxxxxxxx subnet-xxxxxxxxxxxxxxxxx
+EOF
+}
+
+# Check if help flag is set
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Ensure route-table-id and vpc-id are provided
+if [ -z "$1" ]; then
+    read -p "Enter route table ID (e.g., rtb-xxxxxxxx): " ROUTE_TABLE_ID
+else
+    ROUTE_TABLE_ID=$1
+fi
+
+if [ -z "$2" ]; then
+    read -p "Enter VPC ID (e.g., vpc-xxxxxxxx): " VPC_ID
+else
+    VPC_ID=$2
+fi
+
+# Ensure at least one subnet is provided
+if [ -z "$3" ]; then
+    read -p "Enter at least one Subnet ID (e.g., subnet-xxxxxxxx): " SUBNET_IDS
+else
+    SUBNET_IDS="${@:3}"
+fi
+
+# Check if the route table exists in the VPC
+echo "Checking if route table $ROUTE_TABLE_ID exists in VPC $VPC_ID..."
+RT_EXISTS=$(aws ec2 describe-route-tables --route-table-id "$ROUTE_TABLE_ID" --query "RouteTables[?VpcId=='$VPC_ID'].RouteTableId" --output text)
+
+if [ "$RT_EXISTS" == "None" ]; then
+    echo "Error: Route table $ROUTE_TABLE_ID does not exist in VPC $VPC_ID."
+    exit 1
+fi
+
+# Disassociate the route table from each provided subnet
+for SUBNET_ID in $SUBNET_IDS; do
+    echo "Disassociating route table from subnet $SUBNET_ID..."
+    
+    # Fetch the association ID of the route table with the subnet
+    ASSOC_ID=$(aws ec2 describe-route-tables --route-table-id "$ROUTE_TABLE_ID" --filters "Name=association.subnet-id,Values=$SUBNET_ID" --query "RouteTables[0].Associations[0].AssociationId" --output text)
+
+    if [ "$ASSOC_ID" != "None" ]; then
+        aws ec2 disassociate-route-table --association-id "$ASSOC_ID"
+        if [ $? -eq 0 ]; then
+            echo "Successfully disassociated route table from subnet $SUBNET_ID."
+        else
+            echo "Error disassociating route table from subnet $SUBNET_ID."
+        fi
+    else
+        echo "No association found for subnet $SUBNET_ID."
+    fi
+done
+
+# Delete the route table
+echo "Deleting route table $ROUTE_TABLE_ID..."
+aws ec2 delete-route-table --route-table-id "$ROUTE_TABLE_ID"
+
+# Check if the route table deletion was successful
+if [ $? -ne 0 ]; then
+    echo "Error deleting route table $ROUTE_TABLE_ID. Exiting."
+    exit 1
+fi
+
+echo "Route table $ROUTE_TABLE_ID has been successfully deleted."
+
+# Optional: Delete any associated tags (if any exist)
+echo "Removing tags from route table $ROUTE_TABLE_ID..."
+aws ec2 delete-tags --resources "$ROUTE_TABLE_ID" --tags "Key=Name"
+
+echo "Tags removed from route table $ROUTE_TABLE_ID (if any existed)."
+echo "Route table cleanup complete."

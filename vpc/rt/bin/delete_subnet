@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+# Function to show help message
+show_help() {
+    cat <<EOF
+Usage: $0 <vpc-id> <subnet-id>
+
+Delete a subnet in the specified VPC. This script will remove the subnet and any associations with route tables.
+
+Parameters:
+  vpc-id             : The VPC ID where the subnet exists (e.g., vpc-xxxxxxxx).
+  subnet-id          : The subnet ID to delete (e.g., subnet-xxxxxxxx).
+
+Example:
+  ./delete-subnet.sh vpc-xxxxxxxxxxxxxxxxx subnet-xxxxxxxxxxxxxxxxx
+EOF
+}
+
+# Check if help flag is set
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Ensure vpc-id and subnet-id are provided
+if [ -z "$1" ]; then
+    read -p "Enter VPC ID (e.g., vpc-xxxxxxxx): " VPC_ID
+else
+    VPC_ID=$1
+fi
+
+if [ -z "$2" ]; then
+    read -p "Enter Subnet ID (e.g., subnet-xxxxxxxx): " SUBNET_ID
+else
+    SUBNET_ID=$2
+fi
+
+# Validate the subnet exists
+echo "Checking if subnet $SUBNET_ID exists in VPC $VPC_ID..."
+SUBNET_EXISTS=$(aws ec2 describe-subnets --subnet-ids "$SUBNET_ID" --query "Subnets[?VpcId=='$VPC_ID'].SubnetId" --output text)
+
+if [ "$SUBNET_EXISTS" == "None" ]; then
+    echo "Error: Subnet $SUBNET_ID does not exist in VPC $VPC_ID."
+    exit 1
+fi
+
+# Ensure the subnet is not associated with any route table
+ASSOCIATION_ID=$(aws ec2 describe-route-tables --filters "Name=association.subnet-id,Values=$SUBNET_ID" --query "RouteTables[0].Associations[0].AssociationId" --output text)
+
+if [ "$ASSOCIATION_ID" != "None" ]; then
+    echo "Disassociating subnet $SUBNET_ID from the route table..."
+    aws ec2 disassociate-route-table --association-id "$ASSOCIATION_ID"
+    if [ $? -eq 0 ]; then
+        echo "Successfully disassociated subnet $SUBNET_ID from the route table."
+    else
+        echo "Error disassociating subnet $SUBNET_ID from the route table."
+    fi
+fi
+
+# Delete the subnet
+echo "Deleting subnet $SUBNET_ID from VPC $VPC_ID..."
+DELETE_SUBNET_RESPONSE=$(aws ec2 delete-subnet --subnet-id "$SUBNET_ID")
+
+# Check if the subnet deletion was successful
+if [ $? -ne 0 ]; then
+    echo "Error deleting subnet $SUBNET_ID. Exiting."
+    exit 1
+fi
+
+echo "Subnet $SUBNET_ID has been successfully deleted."
+
+# Optional: Delete any associated tags (if any exist)
+echo "Removing tags from subnet $SUBNET_ID..."
+aws ec2 delete-tags --resources "$SUBNET_ID" --tags "Key=Name"
+
+echo "Tags removed from subnet $SUBNET_ID (if any existed)."
+echo "Subnet deletion complete."

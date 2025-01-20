@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+
+# Function to show help message
+show_help() {
+    cat <<EOF
+Usage: $0 <vpc-id> <subnet-name> <cidr-block> [<availability-zone>]
+
+Create a subnet in the specified VPC with the given CIDR block and ensure it is not associated with any route table.
+
+Parameters:
+  vpc-id             : The VPC ID where the subnet will be created (e.g., vpc-xxxxxxxx).
+  subnet-name        : The name for the subnet (e.g., my-subnet).
+  cidr-block         : The CIDR block for the subnet (e.g., 10.0.1.0/24).
+  availability-zone   : The availability zone (optional). If not provided, defaults will be used.
+
+Example:
+  ./create-subnet.sh vpc-xxxxxxxxxxxxxxxxx my-subnet-test-fg2345 10.0.1.0/24
+EOF
+}
+
+# Function to validate the availability zone
+validate_az() {
+    local region=$1
+    local az=$2
+    VALID_ZONE=$(aws ec2 describe-availability-zones --region $region --query "AvailabilityZones[?ZoneName=='$az'].ZoneName" --output text)
+    
+    if [ "$VALID_ZONE" != "$az" ]; then
+        echo "Error: The availability zone $az is invalid or not available in region $region."
+        exit 1
+    fi
+}
+
+# Check if help flag is set
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# Ensure vpc-id, subnet-name, and cidr-block are provided
+if [ -z "$1" ]; then
+    read -p "Enter VPC ID (e.g., vpc-xxxxxxxx): " VPC_ID
+else
+    VPC_ID=$1
+fi
+
+if [ -z "$2" ]; then
+    read -p "Enter subnet name (e.g., my-subnet): " SUBNET_NAME
+else
+    SUBNET_NAME=$2
+fi
+
+if [ -z "$3" ]; then
+    read -p "Enter CIDR block for the subnet (e.g., 10.0.1.0/24): " CIDR_BLOCK
+else
+    CIDR_BLOCK=$3
+fi
+
+# Optional: Get the availability zone
+if [ -z "$4" ]; then
+    # If no availability zone is provided, fetch the first availability zone dynamically
+    AVAILABILITY_ZONE=$(aws ec2 describe-availability-zones --query "AvailabilityZones[0].ZoneName" --output text)
+    echo "No availability zone provided. Defaulting to: $AVAILABILITY_ZONE"
+else
+    AVAILABILITY_ZONE=$4
+    REGION=$(aws ec2 describe-vpcs --vpc-id $VPC_ID --query "Vpcs[0].Region" --output text)
+    validate_az $REGION $AVAILABILITY_ZONE
+fi
+
+# Create the subnet
+echo "Creating subnet $SUBNET_NAME in VPC $VPC_ID with CIDR $CIDR_BLOCK in Availability Zone $AVAILABILITY_ZONE..."
+CREATE_SUBNET_RESPONSE=$(aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block "$CIDR_BLOCK" --availability-zone "$AVAILABILITY_ZONE" --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=$SUBNET_NAME}]")
+
+# Check if the subnet creation was successful
+if [ $? -ne 0 ]; then
+    echo "Error creating subnet $SUBNET_NAME. Exiting."
+    exit 1
+fi
+
+# Extract the Subnet ID from the response
+SUBNET_ID=$(echo "$CREATE_SUBNET_RESPONSE" | jq -r '.Subnet.SubnetId')
+
+echo "Subnet $SUBNET_NAME created with ID: $SUBNET_ID"
+
+# Ensure the subnet is not associated with any route table (by disassociating it from any current association)
+ASSOCIATION_ID=$(aws ec2 describe-route-tables --filters "Name=association.subnet-id,Values=$SUBNET_ID" --query "RouteTables[0].Associations[0].AssociationId" --output text)
+
+if [ "$ASSOCIATION_ID" != "None" ]; then
+    echo "Disassociating subnet $SUBNET_NAME from the current route table..."
+    aws ec2 disassociate-route-table --association-id "$ASSOCIATION_ID"
+    if [ $? -eq 0 ]; then
+        echo "Successfully disassociated subnet $SUBNET_NAME from the route table."
+    else
+        echo "Error disassociating subnet $SUBNET_NAME from the route table."
+    fi
+fi
+
+echo "Subnet creation complete. The subnet $SUBNET_NAME is not associated with any route table."
+
