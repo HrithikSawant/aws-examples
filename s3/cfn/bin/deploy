@@ -1,0 +1,11 @@
+#! /usr/bin/env bash
+echo "== deploy s3 bucket via CNF"
+
+STACK_NAME="cfn-s3-simple-hrithik-fg0293475" # Update stack-name name
+
+# https://docs.aws.amazon.com/cli/latest/reference/cloudformation/
+aws cloudformation deploy \
+ --template-file template.yaml \
+ --region your-region \
+ --no-execute-changeset \
+ --stack-name $STACK_NAME
