@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+# Demo for egress-only-internet-gateway
+
+# Create a VPC with IPv4 CIDR and Amazon-provided IPv6 CIDR block
+aws ec2 create-vpc \
+  --cidr-block 10.0.0.0/16 \
+  --amazon-provided-ipv6-cidr-block
+
+# Create a subnet within the VPC with both IPv4 and IPv6 CIDR blocks
+aws ec2 create-subnet \
+  --vpc-id vpc-xxxxx \
+  --ipv6-cidr-block ipv6-id-xxx::/64 \
+  --cidr-block 10.0.2.0/24
+
+# Enable DNS64 in the subnet to allow IPv6-only clients to resolve IPv4 DNS records
+aws ec2 modify-subnet-attribute \
+  --subnet-id subnet-xxxxx \
+  --enable-dns64
+
+# Create an Egress-Only Internet Gateway for outbound IPv6 traffic
+aws ec2 create-egress-only-internet-gateway \
+  --vpc-id vpc-xxxxx
+
+# Create a standard Internet Gateway for outbound IPv4 traffic and attach it to the VPC
+aws ec2 create-internet-gateway
+aws ec2 attach-internet-gateway \
+  --internet-gateway-id igw-xxxxx \
+  --vpc-id vpc-xxxxx
+
+# Allocate an Elastic IP address for the NAT Gateway
+aws ec2 allocate-address
+
+# Create a NAT Gateway in the subnet to allow instances in private subnets to access the Internet
+aws ec2 create-nat-gateway \
+  --subnet-id subnet-xxxxx \
+  --allocation-id eipalloc-xxxxx
+
+# Create a route table for the VPC
+aws ec2 create-route-table \
+  --vpc-id vpc-xxxxx
+
+# Add routes to the route table:
+# - Route for all IPv6 traffic (::/0) to the Egress-Only Internet Gateway
+aws ec2 create-route \
+  --route-table-id rtb-xxxxx \
+  --destination-ipv6-cidr-block ::/0 \
+  --egress-only-internet-gateway-id eigw-xxxxx
+
+# - Route for NAT64 translation (64:ff9b::/96) to the NAT Gateway
+aws ec2 create-route \
+  --route-table-id rtb-xxxxx \
+  --destination-ipv6-cidr-block 64:ff9b::/96 \
+  --nat-gateway-id nat-xxxxx
+
+# - Route for all IPv4 traffic (0.0.0.0/0) to the Internet Gateway
+aws ec2 create-route \
+  --route-table-id rtb-xxxxx \
+  --destination-cidr-block 0.0.0.0/0 \
+  --gateway-id igw-xxxxx
+
+# Associate the route table with the subnet
+aws ec2 associate-route-table \
+  --route-table-id rtb-xxxxx \
+  --subnet-id subnet-xxxxx
+
+# Create a security group in the VPC for controlling access to instances
+aws ec2 create-security-group \
+  --group-name MyGroupDemoEgress-xxxx \
+  --description "Security group for demo" \
+  --vpc-id vpc-xxxxxx
+
+# Add an inbound rule to the security group to allow SSH access (port 22) from any IP
+aws ec2 authorize-security-group-ingress \
+  --group-id sg-xxxxxx \
+  --protocol tcp --port 22 --cidr 0.0.0.0/0
+
+# Add an inbound rule to the security group to allow ICMP traffic (e.g., ping) from any IP
+aws ec2 authorize-security-group-ingress \
+  --group-id sg-xxxxx \
+  --protocol icmp --port -1 --cidr 0.0.0.0/0
+
+# Launch an EC2 instance with the specified settings
+aws ec2 run-instances \
+    --image-id "ami-xxxxx" \
+    --instance-type "t2.micro" \
+    --key-name "MytestKey" \
+    --network-interfaces '{"SubnetId":"subnet-xxxx","AssociatePublicIpAddress":true,"DeviceIndex":0,"Ipv6AddressCount":1,"Groups":["sg-xxxxxxxx"]}' \
+    --credit-specification '{"CpuCredits":"standard"}' \
+    --tag-specifications '{"ResourceType":"instance","Tags":[{"Key":"Name","Value":"Egress Demo"}]}' \
+    --metadata-options '{"HttpEndpoint":"enabled","HttpPutResponseHopLimit":2,"HttpTokens":"required"}' \
+    --private-dns-name-options '{"HostnameType":"ip-name","EnableResourceNameDnsARecord":false,"EnableResourceNameDnsAAAARecord":false}' \
+    --count "1" 
+

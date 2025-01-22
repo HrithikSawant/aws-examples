@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# Function to test IPv6 reachability from an external source by pinging the instance's IPv6 address
+verify_ipv6_reachability() {
+  echo "Testing IPv6 reachability from an external source..."
+  
+  # Ensure the user replaces <YourInstanceIPv6Address> with the actual IPv6 address of the instance
+  instance_ipv6="<YourInstanceIPv6Address>"
+  
+  # Pinging the instance's IPv6 address from an external host
+  ping6 -c 4 "$instance_ipv6"
+}
+
+# Main execution flow
+echo "Starting IPv6 Reachability Verification Script..."
+
+# Verify IPv6 reachability from an external source
+verify_ipv6_reachability
+
+echo "Script completed."

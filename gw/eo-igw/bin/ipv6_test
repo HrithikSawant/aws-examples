@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# Function to get the IPv6 address of the instance
+get_ipv6_address() {
+  echo "Fetching IPv6 address of the instance..."
+  ipv6_address=$(curl -s ifconfig.me)
+  echo "IPv6 Address: $ipv6_address"
+}
+
+# Function to test IPv6 connectivity by pinging an external service (e.g., google.com)
+ping_ipv6_service() {
+  echo "Pinging google.com over IPv6..."
+  ping6 -c 4 google.com
+}
+
+# Main execution flow
+echo "Starting IPv6 Connectivity Test Script..."
+
+# Get IPv6 address of the instance
+get_ipv6_address
+
+# Ping google.com to test IPv6 connectivity
+ping_ipv6_service
+
+echo "Script completed."

@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+# Variables (replace placeholders with actual IDs)
+VPC_ID="vpc-xxxxx"
+SUBNET_ID="subnet-xxxxx"
+IGW_ID="igw-xxxxx"
+EIGW_ID="eigw-xxxxx"
+NAT_GATEWAY_ID="nat-xxxxx"
+ALLOCATION_ID="eipalloc-xxxxx"
+RTB_ID="rtb-xxxxx"
+SECURITY_GROUP_ID="sg-xxxxx"
+INSTANCE_ID="i-xxxxx"
+
+# 1. Terminate the EC2 instance
+aws ec2 terminate-instances --instance-ids $INSTANCE_ID
+
+# Wait for the instance to terminate
+aws ec2 wait instance-terminated --instance-ids $INSTANCE_ID
+
+# 2. Disassociate and delete the route table
+aws ec2 disassociate-route-table --association-id $(aws ec2 describe-route-tables \
+  --route-table-ids $RTB_ID \
+  --query "RouteTables[0].Associations[0].RouteTableAssociationId" --output text)
+aws ec2 delete-route-table --route-table-id $RTB_ID
+
+# 3. Delete the NAT Gateway
+aws ec2 delete-nat-gateway --nat-gateway-id $NAT_GATEWAY_ID
+
+# Wait for the NAT Gateway to be deleted
+aws ec2 wait nat-gateway-available --nat-gateway-id $NAT_GATEWAY_ID
+
+# 4. Release the Elastic IP address
+aws ec2 release-address --allocation-id $ALLOCATION_ID
+
+# 5. Detach and delete the Internet Gateway
+aws ec2 detach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id $VPC_ID
+aws ec2 delete-internet-gateway --internet-gateway-id $IGW_ID
+
+# 6. Delete the Egress-Only Internet Gateway
+aws ec2 delete-egress-only-internet-gateway --egress-only-internet-gateway-id $EIGW_ID
+
+# 7. Delete the security group
+aws ec2 delete-security-group --group-id $SECURITY_GROUP_ID
+
+# 8. Delete the subnet
+aws ec2 delete-subnet --subnet-id $SUBNET_ID
+
+# 9. Delete the VPC
+aws ec2 delete-vpc --vpc-id $VPC_ID
