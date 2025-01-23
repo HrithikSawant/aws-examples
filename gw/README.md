@@ -5,7 +5,7 @@ This directory contains examples and scripts for working with various types of G
 1. [Internet Gateway (IGW)](https://github.com/HrithikSawant/aws-examples/blob/main/vpc/basics/README.md)  
    This demonstrates the use of an Internet Gateway (IGW) in a VPC.
 
-2. [Egress-Only Internet Gateway (EO-IGW)](https://github.com/HrithikSawant/aws-examples/blob/main/gw/go-igw/README.md)  
+2. [Egress-Only Internet Gateway (EO-IGW)](https://github.com/HrithikSawant/aws-examples/blob/main/gw/eo-igw/README.md)  
    This demonstrates the use of an Egress-Only Internet Gateway (EO-IGW) in a VPC.
 
 ## Prerequisites
