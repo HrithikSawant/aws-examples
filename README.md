@@ -3,10 +3,13 @@
 This repository contains a collection of AWS service examples and use cases, demonstrating how to effectively utilize Amazon Web Services for exploring various services.
 
 ## Contents
+
 - **[CLI Installation Scripts](https://github.com/HrithikSawant/aws-examples/blob/main/bin/README.md)**: Examples to install commonly used CLI tools: AWS CLI, PowerShell CLI, and Terraform CLI.
 - **[S3 Examples](https://github.com/HrithikSawant/aws-examples/blob/main/s3/README.md)**: Demonstrations of creating, managing, and interacting with Amazon S3 buckets.
 - **[Virtual Private Cloud VPC](https://github.com/HrithikSawant/aws-examples/blob/main/vpc/README.md)**: Demonstrations of creating, managing, and interacting with Virtual Private Cloud (VPC) resources.
 - **[Gateways](https://github.com/HrithikSawant/aws-examples/blob/main/gw/README.md)**: Demonstrations of creating and interacting with Gateways (GW) resources
+- **[IAM](https://github.com/HrithikSawant/aws-examples/blob/main/iam/polp/README.md)**
+DEmonstration of IAM example.
 
 ## Prerequisites
 
