@@ -9,7 +9,7 @@ This repository contains a collection of AWS service examples and use cases, dem
 - **[Virtual Private Cloud VPC](https://github.com/HrithikSawant/aws-examples/blob/main/vpc/README.md)**: Demonstrations of creating, managing, and interacting with Virtual Private Cloud (VPC) resources.
 - **[Gateways](https://github.com/HrithikSawant/aws-examples/blob/main/gw/README.md)**: Demonstrations of creating and interacting with Gateways (GW) resources
 - **[IAM](https://github.com/HrithikSawant/aws-examples/blob/main/iam/polp/README.md)**
-DEmonstration of IAM example.
+Demonstration of IAM example.
 
 ## Prerequisites
 
