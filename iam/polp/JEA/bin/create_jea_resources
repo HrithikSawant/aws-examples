@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+# Variables
+ACCOUNT_ID="YOUR_ACCOUNT_ID"  # Replace with your AWS Account ID
+ROLE_NAME="JEAReadOnlyRole"
+POLICY_NAME="JEAReadOnlyPolicy"
+BUCKET_NAME="example-bucket"  # Replace with your bucket name
+
+# Create the policy
+echo "Creating IAM policy..."
+aws iam create-policy \
+    --policy-name $POLICY_NAME \
+    --policy-document '{
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::'$BUCKET_NAME'/*"
+            }
+        ]
+    }'
+
+# Create the role
+echo "Creating IAM role..."
+aws iam create-role \
+    --role-name $ROLE_NAME \
+    --assume-role-policy-document '{
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole"
+            }
+        ]
+    }'
+
+# Attach the policy to the role
+echo "Attaching policy to role..."
+aws iam attach-role-policy \
+    --role-name $ROLE_NAME \
+    --policy-arn arn:aws:iam::$ACCOUNT_ID:policy/$POLICY_NAME
+
+echo "JEA resources created successfully!"
