@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+# Variables
+ACCOUNT_ID="YOUR_ACCOUNT_ID"  # Replace with your AWS Account ID
+ROLE_NAME="JITAccessRole"
+POLICY_NAME="JITS3ReadOnlyPolicy"
+
+# Detach the policy from the role
+echo "Detaching policy from role..."
+aws iam detach-role-policy \
+    --role-name $ROLE_NAME \
+    --policy-arn arn:aws:iam::$ACCOUNT_ID:policy/$POLICY_NAME
+
+# Delete the role
+echo "Deleting IAM role..."
+aws iam delete-role --role-name $ROLE_NAME
+
+# Delete the policy
+echo "Deleting IAM policy..."
+aws iam delete-policy --policy-arn arn:aws:iam::$ACCOUNT_ID:policy/$POLICY_NAME
+
+echo "JIT resources cleaned up successfully!"
