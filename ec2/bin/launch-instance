@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+
+# Function to launch an EC2 instance
+launch_instance() {
+  INSTANCE_ID=$(aws ec2 run-instances \
+    --image-id ami-0abcdef1234567890 \
+    --instance-type t3.micro \
+    --key-name MyKeyPair \
+    --security-group-ids sg-xxxxxx \
+    --subnet-id subnet-xxxxxx \
+    --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=DemoInstance}]' \
+    --query 'Instances[0].InstanceId' \
+    --output text)
+  echo "Instance launched with ID: $INSTANCE_ID"
+}
+
+# Function to stop an EC2 instance
+stop_instance() {
+  if [ -z "$1" ]; then
+    echo "Error: Instance ID is required."
+    exit 1
+  fi
+  echo "Stopping instance $1..."
+  aws ec2 stop-instances --instance-ids $1
+  aws ec2 wait instance-stopped --instance-ids $1
+  echo "Instance $1 has been stopped."
+}
+
+# Function to start an EC2 instance
+start_instance() {
+  if [ -z "$1" ]; then
+    echo "Error: Instance ID is required."
+    exit 1
+  fi
+  echo "Starting instance $1..."
+  aws ec2 start-instances --instance-ids $1
+  aws ec2 wait instance-running --instance-ids $1
+  echo "Instance $1 is now running."
+}
+
+# Function to reboot an EC2 instance
+reboot_instance() {
+  if [ -z "$1" ]; then
+    echo "Error: Instance ID is required."
+    exit 1
+  fi
+  echo "Rebooting instance $1..."
+  aws ec2 reboot-instances --instance-ids $1
+  echo "Instance $1 reboot initiated."
+}
+
+# Function to terminate an EC2 instance
+terminate_instance() {
+  if [ -z "$1" ]; then
+    echo "Error: Instance ID is required."
+    exit 1
+  fi
+  echo "Terminating instance $1..."
+  aws ec2 terminate-instances --instance-ids $1
+  aws ec2 wait instance-terminated --instance-ids $1
+  echo "Instance $1 has been terminated."
+}
+
+# Function to check the status of an EC2 instance
+check_status() {
+  if [ -z "$1" ]; then
+    echo "Error: Instance ID is required."
+    exit 1
+  fi
+  echo "Checking status of instance $1..."
+  aws ec2 describe-instances --instance-ids $1 --query 'Reservations[0].Instances[0].State.Name' --output text
+}
+
+# Main script logic
+if [ "$#" -eq 0 ]; then
+  echo "Usage: $0 [--launch|--stop INSTANCE_ID|--start INSTANCE_ID|--reboot INSTANCE_ID|--terminate INSTANCE_ID|--check-status INSTANCE_ID]"
+  exit 1
+fi
+
+case $1 in
+  --launch)
+    launch_instance
+    ;;
+  --stop)
+    stop_instance $2
+    ;;
+  --start)
+    start_instance $2
+    ;;
+  --reboot)
+    reboot_instance $2
+    ;;
+  --terminate)
+    terminate_instance $2
+    ;;
+  --check-status)
+    check_status $2
+    ;;
+  *)
+    echo "Invalid option. Use --launch, --stop, --start, --reboot, --terminate, or --check-status."
+    exit 1
+    ;;
+esac
