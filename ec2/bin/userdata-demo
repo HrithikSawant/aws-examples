@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# Launches an instance with UserData to install Apache
+aws ec2 run-instances \
+  --image-id ami-0abcdef1234567890 \
+  --instance-type t3.micro \
+  --user-data '#!/usr/bin/env bash
+               yum update -y
+               yum install httpd -y
+               systemctl start httpd' \
+  --key-name MyKeyPair
