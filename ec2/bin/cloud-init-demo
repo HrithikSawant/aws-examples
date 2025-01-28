@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+
+usage() {
+  echo "Usage: $0 --launch --image-id AMI_ID --instance-type INSTANCE_TYPE --user-data USER_DATA_FILE --key-name KEY_NAME"
+  echo "Example: $0 --launch --image-id ami-0abcdef1234567890 --instance-type t3.micro --user-data examples/cloud-init-config.yaml --key-name MyKeyPair"
+  exit 1
+}
+
+
+launch_instance() {
+  local IMAGE_ID=$1
+  local INSTANCE_TYPE=$2
+  local USER_DATA_FILE=$3
+  local KEY_NAME=$4
+
+  if [[ ! -f "$USER_DATA_FILE" ]]; then
+    echo "Error: User data file '$USER_DATA_FILE' not found."
+    exit 1
+  fi
+
+  echo "Launching instance with the following configuration:"
+  echo "  Image ID: $IMAGE_ID"
+  echo "  Instance Type: $INSTANCE_TYPE"
+  echo "  User Data File: $USER_DATA_FILE"
+  echo "  Key Name: $KEY_NAME"
+
+  aws ec2 run-instances \
+    --image-id "$IMAGE_ID" \
+    --instance-type "$INSTANCE_TYPE" \
+    --user-data "file://$USER_DATA_FILE" \
+    --key-name "$KEY_NAME" \
+    --query 'Instances[0].InstanceId' \
+    --output text
+
+  if [ $? -eq 0 ]; then
+    echo "Instance launched successfully."
+  else
+    echo "Failed to launch instance."
+    exit 1
+  fi
+}
+
+# Parse command-line arguments
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --launch)
+      LAUNCH=true
+      ;;
+    --image-id)
+      IMAGE_ID="$2"
+      shift
+      ;;
+    --instance-type)
+      INSTANCE_TYPE="$2"
+      shift
+      ;;
+    --user-data)
+      USER_DATA_FILE="$2"
+      shift
+      ;;
+    --key-name)
+      KEY_NAME="$2"
+      shift
+      ;;
+    *)
+      echo "Unknown parameter: $1"
+      usage
+      ;;
+  esac
+  shift
+done
+
+# Validate required arguments
+if [[ -z "$LAUNCH" || -z "$IMAGE_ID" || -z "$INSTANCE_TYPE" || -z "$USER_DATA_FILE" || -z "$KEY_NAME" ]]; then
+  echo "Error: Missing required arguments."
+  usage
+fi
+
+# Launch the instance
+launch_instance "$IMAGE_ID" "$INSTANCE_TYPE" "$USER_DATA_FILE" "$KEY_NAME"
