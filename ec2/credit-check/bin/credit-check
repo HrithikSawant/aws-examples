@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+
+# AWS CPU Credit Monitor (Linux-Compatible)
+
+# Use IMDSv2 to get instance ID
+get_instance_id() {
+  TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" \
+         -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+
+  if [[ -n "$TOKEN" ]]; then
+    INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
+                 http://169.254.169.254/latest/meta-data/instance-id)
+  fi
+
+  # Fallback to IMDSv1 if IMDSv2 is unavailable (not recommended for security)
+  if [[ -z "$INSTANCE_ID" ]]; then
+    INSTANCE_ID=$(curl -s --noproxy "*" http://169.254.169.254/latest/meta-data/instance-id)
+  fi
+}
+
+get_instance_id
+METRICS=("CPUCreditBalance" "CPUCreditUsage" "CPUSurplusCreditsCharged")
+DEFAULT_METRIC="CPUCreditBalance"
+
+usage() {
+  cat <<EOF
+AWS CPU Credit Monitor
+
+Usage: ${0##*/} [options]
+
+Options:
+  -m METRIC   Metric to check (${METRICS[*]})
+  -p HOURS    Time window in hours (default: 1)
+  -i MIN      Data point interval (default: 5)
+  -l SEC      Continuous monitoring interval
+  -j          JSON output format
+  -h          Show this help
+
+Examples:
+  ${0##*/} -m CPUCreditUsage -p 2
+  ${0##*/} -l 300 -j
+EOF
+  exit 0
+}
+
+die() {
+  echo "Error: $1" >&2
+  exit 1
+}
+
+check_environment() {
+  [ -z "$INSTANCE_ID" ] && die "Not running on an EC2 instance"
+  command -v aws &>/dev/null || die "AWS CLI not installed"
+  command -v jq &>/dev/null || die "jq not installed"
+  aws sts get-caller-identity &>/dev/null || die "AWS CLI not authenticated. Run 'aws configure'."
+}
+
+get_metrics() {
+  local metric=$1
+  local period=$2
+  local interval=$3
+  local end=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  local start=$(date -u --date="${period} hours ago" +%Y-%m-%dT%H:%M:%SZ)
+
+  aws cloudwatch get-metric-statistics \
+    --namespace AWS/EC2 \
+    --metric-name "$metric" \
+    --dimensions Name=InstanceId,Value="$INSTANCE_ID" \
+    --start-time "$start" \
+    --end-time "$end" \
+    --period $((interval * 60)) \
+    --statistics Average \
+    --output json 2>/dev/null
+}
+
+display_results() {
+  local metric=$1
+  local data=$2
+  
+  if [ "$JSON_OUTPUT" = true ]; then
+    echo "$data"
+    return
+  fi
+
+  echo "Instance: $INSTANCE_ID | Metric: $metric"
+  echo "-----------------------------------------"
+  
+  # Extract data safely
+  mapfile -t results < <(jq -r '.Datapoints[] | "\(.Timestamp) \(.Average)"' <<< "$data" | sort)
+  if [[ ${#results[@]} -eq 0 ]]; then
+    echo "No data available for the given period."
+    return
+  fi
+
+  for line in "${results[@]}"; do
+    timestamp=$(awk '{print $1}' <<< "$line")
+    value=$(awk '{print $2}' <<< "$line")
+    timestamp=$(date -d "$timestamp" +"%H:%M:%S")
+    printf "[%s] %.2f\n" "$timestamp" "$value"
+  done
+
+  # Calculate min, max, avg
+  local stats=$(jq '.Datapoints[].Average' <<< "$data" | awk '
+    BEGIN {min=9999; max=0; sum=0; count=0}
+    {sum+=$1; count+=1; if($1<min) min=$1; if($1>max) max=$1}
+    END {if(count > 0) print min" "max" "sum/count; else print "N/A N/A N/A"}
+  ')
+
+  echo "-----------------------------------------"
+  echo "Min: $(cut -d' ' -f1 <<< "$stats")"
+  echo "Max: $(cut -d' ' -f2 <<< "$stats")"
+  echo "Avg: $(cut -d' ' -f3 <<< "$stats")"
+}
+
+main() {
+  check_environment
+
+  # Default values
+  local metric="$DEFAULT_METRIC"
+  local period=1
+  local interval=5
+  local loop=0
+  JSON_OUTPUT=false
+
+  # Parse arguments
+  while getopts "m:p:i:l:jh" opt; do
+    case $opt in
+      m) metric="$OPTARG" ;;
+      p) period="$OPTARG" ;;
+      i) interval="$OPTARG" ;;
+      l) loop="$OPTARG" ;;
+      j) JSON_OUTPUT=true ;;
+      h) usage ;;
+      *) die "Invalid option: -$OPTARG" ;;
+    esac
+  done
+
+  # Validate metric
+  [[ " ${METRICS[*]} " =~ " $metric " ]] || die "Invalid metric. Choose from: ${METRICS[*]}"
+
+  while :; do
+    data=$(get_metrics "$metric" "$period" "$interval")
+    [ -z "$data" ] && die "Failed to retrieve metrics"
+
+    display_results "$metric" "$data"
+
+    [ "$loop" -eq 0 ] && break
+    sleep "$loop"
+    echo -e "\n--- Refreshing in ${loop}s ---\n"
+  done
+}
+
+main "$@"
