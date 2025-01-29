@@ -1,0 +1,144 @@
+#!/bin/bash
+
+# Metadata URL constants
+METADATA_URL="http://169.254.169.254/latest/meta-data"
+INSTANCE_ID_URL="$METADATA_URL/instance-id"
+PUBLIC_IP_URL="$METADATA_URL/public-ipv4"
+AVAILABILITY_ZONE_URL="$METADATA_URL/placement/availability-zone"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Get IMDSv2 token
+TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+
+# Function to display help
+usage() {
+  cat <<EOF
+EC2 Metadata Retrieval Script
+
+Usage: $0 [options]
+
+Options:
+  -a, --all        Show all available metadata
+  -f, --field      Specify specific metadata field(s)
+  -j, --json       Output in JSON format
+  -h, --help       Show this help message
+
+Available fields:
+  instance-id       | ami-id          | hostname
+  public-ipv4       | local-ipv4      | mac
+  instance-type     | availability-zone
+  security-groups   | iam-info
+  network/interfaces
+
+Examples:
+  $0 -f instance-id public-ipv4
+  $0 --all
+  $0 --json
+EOF
+  exit 0
+}
+
+# Check if we're actually running on EC2
+is_ec2_instance() {
+  curl -s --max-time 1 -o /dev/null $METADATA_URL/ && return 0 || return 1
+}
+
+# Get metadata with error handling
+get_metadata() {
+  local field=$1
+  local url="$METADATA_URL/$field"
+  local value=$(curl -s --header "X-aws-ec2-metadata-token: $TOKEN" --max-time 2 $url 2>/dev/null)
+  
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}Error${NC}: Failed to retrieve $field" >&2
+    return 1
+  fi
+  
+  [ -z "$value" ] && echo "N/A" || echo "$value"
+}
+
+# Main function to display metadata
+show_metadata() {
+  if ! is_ec2_instance; then
+    echo -e "${RED}Error: This script must be run on an EC2 instance${NC}" >&2
+    exit 1
+  fi
+
+  local fields=("$@")
+  declare -A metadata
+  
+  # Get all metadata if --all is specified
+  if [[ " ${fields[@]} " =~ "all" ]]; then
+    fields=(
+      instance-id ami-id instance-type
+      public-ipv4 local-ipv4 mac
+      hostname availability-zone
+      security-groups iam/info
+    )
+  fi
+
+  # Collect data
+  for field in "${fields[@]}"; do
+    metadata["$field"]=$(get_metadata "$field")
+  done
+
+  # Display results
+  if [[ $JSON_OUTPUT == true ]]; then
+    echo -n "{"
+    first=true
+    for field in "${!metadata[@]}"; do
+      $first || echo -n ","
+      first=false
+      printf "\"%s\": \"%s\"" "$field" "${metadata[$field]//\"/\\\"}"
+    done
+    echo "}"
+  else
+    echo -e "\n${GREEN}EC2 Instance Metadata${NC}\n"
+    for field in "${fields[@]}"; do
+      printf "%-20s: ${YELLOW}%s${NC}\n" "${field^^}" "${metadata[$field]}"
+    done
+    echo
+  fi
+}
+
+# Parse arguments
+JSON_OUTPUT=false
+FIELDS=()
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -a|--all)
+      FIELDS+=("all")
+      shift
+      ;;
+    -f|--field)
+      shift
+      FIELDS+=("$1")
+      shift
+      ;;
+    -j|--json)
+      JSON_OUTPUT=true
+      shift
+      ;;
+    -h|--help)
+      usage
+      ;;
+    *)
+      echo -e "${RED}Unknown option: $1${NC}" >&2
+      usage
+      ;;
+  esac
+done
+
+# Default to showing basic info if no arguments
+if [ ${#FIELDS[@]} -eq 0 ]; then
+  FIELDS=(instance-id public-ipv4 instance-type availability-zone)
+fi
+
+# Run main function
+show_metadata "${FIELDS[@]}"
