@@ -10,6 +10,7 @@ This repository contains a collection of AWS service examples and use cases, dem
 - **[Gateways](https://github.com/HrithikSawant/aws-examples/blob/main/gw/README.md)**: Demonstrations of creating and interacting with Gateways (GW) resources
 - **[IAM](https://github.com/HrithikSawant/aws-examples/blob/main/iam/polp/README.md)**
 Demonstration of IAM example.
+- **[EC2](https://github.com/HrithikSawant/aws-examples/blob/main/ec2/README.md) Example of EC2
 
 ## Prerequisites
 
