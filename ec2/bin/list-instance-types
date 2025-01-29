@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# Lists all EC2 instance types in your region
+aws ec2 describe-instance-types \
+  --query 'InstanceTypes[].InstanceType' \
+  --output table
