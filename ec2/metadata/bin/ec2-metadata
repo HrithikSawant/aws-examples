@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+# Fetch EC2 Metadata using IMDSv2 (Instance Metadata Service Version 2)
+fetch_metadata() {
+  local path=$1
+  # Get token for IMDSv2
+  local token=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+  
+  # Fetch metadata using the token
+  curl -s -H "X-aws-ec2-metadata-token: $token" "http://169.254.169.254/latest/meta-data/$path"
+}
+
+# Display usage
+usage() {
+  cat <<EOF
+Usage: ${0##*/} [options]
+
+Options:
+  -f FAMILY           Get EC2 Instance Family
+  -p PROCESSOR        Get EC2 Processor Info
+  -s SIZE             Get EC2 Instance Size
+  -r PROFILE          Get EC2 Instance Profile (IAM Role)
+  -l LIFECYCLE        Get EC2 Instance Lifecycle State
+  -h                  Show this help
+EOF
+}
+
+# Main functionality
+main() {
+  while getopts "f:p:s:r:l:h" opt; do
+    case $opt in
+      f)
+        # Fetch EC2 Instance Family
+        FAMILY=$(aws ec2 describe-instances --instance-ids "$(fetch_metadata "instance-id")" --query "Reservations[].Instances[].InstanceType" --output text)
+        echo "EC2 Instance Family: $FAMILY"
+        ;;
+      p)
+        # Fetch EC2 Processor Info
+        PROCESSOR=$(aws ec2 describe-instances --instance-ids "$(fetch_metadata "instance-id")" --query "Reservations[].Instances[].ProcessorInfo" --output json)
+        echo "EC2 Processor Info: $PROCESSOR"
+        ;;
+      s)
+        # Fetch EC2 Instance Size
+        SIZE=$(aws ec2 describe-instances --instance-ids "$(fetch_metadata "instance-id")" --query "Reservations[].Instances[].InstanceType" --output text)
+        echo "EC2 Instance Size: $SIZE"
+        ;;
+      r)
+        # Fetch EC2 Instance Profile (IAM Role)
+        PROFILE=$(aws ec2 describe-instances --instance-ids "$(fetch_metadata "instance-id")" --query "Reservations[].Instances[].IamInstanceProfile.Arn" --output text)
+        echo "EC2 Instance Profile (IAM Role): $PROFILE"
+        ;;
+      l)
+        # Fetch EC2 Instance Lifecycle State
+        LIFECYCLE=$(aws ec2 describe-instances --instance-ids "$(fetch_metadata "instance-id")" --query "Reservations[].Instances[].State.Name" --output text)
+        echo "EC2 Instance Lifecycle State: $LIFECYCLE"
+        ;;
+      h)
+        usage
+        exit 0
+        ;;
+      *)
+        echo "Invalid option"
+        usage
+        exit 1
+        ;;
+    esac
+  done
+}
+
+main "$@"
