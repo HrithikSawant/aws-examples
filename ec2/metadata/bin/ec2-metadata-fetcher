@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+
+IMDSV2_TOKEN=$(curl -sX PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+INSTANCE_ID=$(curl -sH "X-aws-ec2-metadata-token: $IMDSV2_TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+
+usage() {
+  cat <<EOF
+EC2 Metadata Fetcher
+
+Usage: ${0##*/} [option]
+
+Options:
+  -s  Get EC2 instance console screenshot
+  -h  Get EC2 private and public hostnames
+  -u  Get default username based on AMI
+  -b  Check if instance is burstable (T2, T3)
+  -c  Check if source/destination check is enabled
+  -l  Get EC2 system log
+  -p  Get EC2 placement group information
+  -a  Get all available metadata
+  -H  Show this help message
+
+Examples:
+  ${0##*/} -s   # Fetch EC2 console screenshot
+  ${0##*/} -b   # Check if instance is burstable
+  ${0##*/} -a   # Fetch all available metadata
+EOF
+  exit 0
+}
+
+fetch_console_screenshot() {
+  echo "Fetching console screenshot for instance: $INSTANCE_ID..."
+  aws ec2 get-console-screenshot --instance-id "$INSTANCE_ID" --query "ImageData" --output text | base64 -d > console-screenshot.png
+
+  if [ $? -eq 0 ]; then
+    echo "Console screenshot saved as console-screenshot.png"
+  else
+    echo "Failed to fetch console screenshot. Ensure the instance supports this feature."
+  fi
+}
+
+
+fetch_hostnames() {
+  PRIVATE_HOSTNAME=$(curl -sH "X-aws-ec2-metadata-token: $IMDSV2_TOKEN" http://169.254.169.254/latest/meta-data/local-hostname)
+  PUBLIC_HOSTNAME=$(curl -sH "X-aws-ec2-metadata-token: $IMDSV2_TOKEN" http://169.254.169.254/latest/meta-data/public-hostname)
+  echo "Private Hostname: $PRIVATE_HOSTNAME"
+  echo "Public Hostname: $PUBLIC_HOSTNAME"
+}
+
+fetch_default_username() {
+  AMI_ID=$(curl -sH "X-aws-ec2-metadata-token: $IMDSV2_TOKEN" http://169.254.169.254/latest/meta-data/ami-id)
+  
+  case "$AMI_ID" in
+    "ami-0a91cd140a1fc148a") echo "Default username: ec2-user (Amazon Linux 2)" ;;
+    "ami-0b4f40e6") echo "Default username: ubuntu (Ubuntu)" ;;
+    *) echo "Unknown AMI, default username might be different." ;;
+  esac
+}
+
+check_burstable_instances() {
+  INSTANCE_TYPE=$(curl -sH "X-aws-ec2-metadata-token: $IMDSV2_TOKEN" http://169.254.169.254/latest/meta-data/instance-type)
+
+  if [[ "$INSTANCE_TYPE" =~ ^t2.* ]] || [[ "$INSTANCE_TYPE" =~ ^t3.* ]]; then
+    echo "This is a Burstable EC2 Instance ($INSTANCE_TYPE)"
+  else
+    echo "This is not a Burstable EC2 Instance ($INSTANCE_TYPE)"
+  fi
+}
+
+check_source_destination() {
+  SOURCE_DEST_CHECK=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query "Reservations[].Instances[].SourceDestCheck" --output text)
+
+  if [[ "$SOURCE_DEST_CHECK" == "True" ]]; then
+    echo "Source/Destination Check is enabled for this EC2 instance."
+  else
+    echo "Source/Destination Check is disabled for this EC2 instance."
+  fi
+}
+
+fetch_system_log() {
+  aws ec2 get-console-output --instance-id "$INSTANCE_ID" --output text > system-log.txt
+  echo "EC2 System Log saved as system-log.txt"
+}
+
+fetch_placement_group() {
+  PLACEMENT_GROUP=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query "Reservations[].Instances[].Placement.GroupName" --output text)
+  echo "EC2 Instance Placement Group: $PLACEMENT_GROUP"
+}
+
+fetch_all() {
+  fetch_console_screenshot
+  fetch_hostnames
+  fetch_default_username
+  check_burstable_instances
+  check_source_destination
+  fetch_system_log
+  fetch_placement_group
+}
+
+# Argument Parsing
+while getopts "shubclpaH" opt; do
+  case $opt in
+    s) fetch_console_screenshot ;;
+    h) fetch_hostnames ;;
+    u) fetch_default_username ;;
+    b) check_burstable_instances ;;
+    c) check_source_destination ;;
+    l) fetch_system_log ;;
+    p) fetch_placement_group ;;
+    a) fetch_all ;;
+    H) usage ;;
+    *) usage ;;
+  esac
+done
+
+# If no arguments, show usage
+if [ "$#" -eq 0 ]; then
+  usage
+fi
