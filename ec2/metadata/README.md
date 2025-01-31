@@ -41,3 +41,37 @@ This script fetches metadata of an EC2 instance using the AWS EC2 Instance Metad
 ./ec2-metadata -s SIZE
 ./ec2-metadata -r PROFILE
 ```
+
+## Features
+
+- **EC2 Instance Console Screenshot**: Fetching and displaying EC2 instance metadata
+- **EC2 Hostnames**: Fetching and displaying EC2 instance metadata
+- **EC2 Default Username**: Fetching and displaying EC2 instance metadata
+- **EC2 Burstable Instances**: Fetching and displaying EC2 instance metadata
+- **EC2 Source & Destination Checks**: Fetching and displaying EC2 instance metadata
+- **EC2 System Log**: Fetching and displaying EC2 instance metadata
+- **EC2 Placement Groups**: Fetching and displaying EC2 instance metadata
+
+## usage
+  
+```bash
+# retrieve metadata 
+./ec2-metadata-fetcher -s  Get EC2 instance console screenshot
+./ec2-metadata-fetcher -h  Get EC2 private and public hostnames
+./ec2-metadata-fetcher -u  Get default username based on AMI
+./ec2-metadata-fetcher -b  Check if instance is burstable (T2, T3)
+./ec2-metadata-fetcher -c  Check if source/destination check is enabled
+./ec2-metadata-fetcher -l  Get EC2 system log
+./ec2-metadata-fetcher -p  Get EC2 placement group information
+./ec2-metadata-fetcher -a  Get all available metadata
+```
+
+## Features
+
+- **EC2 AMI IMAGE**: creating ami image of an instance
+
+## usage
+  
+```bash
+./ec2-management -a
+```
