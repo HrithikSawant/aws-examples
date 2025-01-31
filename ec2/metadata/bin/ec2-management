@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+# EC2 Management Script with IMDSv2 (Instance Metadata Service Version 2)
+
+# Fetch the IMDSv2 session token
+get_imdsv2_token() {
+  TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+  if [ -z "$TOKEN" ]; then
+    echo "Error: Failed to obtain IMDSv2 token."
+    exit 1
+  fi
+}
+
+# Fetch metadata using IMDSv2
+fetch_metadata() {
+  local metadata_path=$1
+  curl -s "http://169.254.169.254/latest/meta-data/$metadata_path" -H "X-aws-ec2-metadata-token: $TOKEN"
+}
+
+# Create Custom AMI from EC2 instance
+create_ami() {
+  # Fetch the instance ID using IMDSv2
+  INSTANCE_ID=$(fetch_metadata "instance-id")
+  
+  if [ -z "$INSTANCE_ID" ]; then
+    echo "Error: Instance ID not found."
+    exit 1
+  fi
+
+  # Generate a custom AMI name with the current timestamp
+  AMI_NAME="Custom-AMI-$(date +%Y-%m-%d-%H-%M-%S)"
+  
+  # Create an AMI from the running EC2 instance using the instance ID
+  AMI_ID=$(aws ec2 create-image \
+    --instance-id "$INSTANCE_ID" \
+    --name "$AMI_NAME" \
+    --no-reboot \
+    --output text)
+  
+  if [ -z "$AMI_ID" ]; then
+    echo "Error: Failed to create AMI."
+    exit 1
+  fi
+  
+  echo "AMI creation initiated. Image ID: $AMI_ID"
+}
+
+# Show usage instructions
+usage() {
+  cat <<EOF
+Usage: ${0##*/} [option]
+
+Options:
+  -a    Create a custom AMI from an EC2 instance
+  -h    Show this help message
+
+Examples:
+  ${0##*/} -a   # Create a custom AMI
+EOF
+  exit 0
+}
+
+# Parse command line arguments
+while getopts "rslah" opt; do
+  case $opt in
+    a) 
+      get_imdsv2_token
+      create_ami
+      ;;
+    h) 
+      usage
+      ;;
+    *) 
+      usage
+      ;;
+  esac
+done
+
+# If no arguments, show usage
+if [ "$#" -eq 0 ]; then
+  usage
+fi
