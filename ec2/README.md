@@ -21,3 +21,4 @@ This repository contains practical examples and scripts for working with Amazon 
 15. **EC2 Source & Destination Checks**: Fetching and displaying EC2 instance metadata ec2-metadata-fetcher
 16. **EC2 System Log**: Fetching and displaying EC2 instance metadata ec2-metadata-fetcher
 17. **EC2 Placement Groups**: Fetching and displaying EC2 instance metadata ec2-metadata-fetcher
+18. **EC2 AMI IMAGE**: creating ami image of an instance.
