@@ -26,13 +26,6 @@ Run the script with optional parameters to customize the ASG settings:
 - `-s, --subnets`       : Set the subnets for the ASG (default: predefined values)
 - `-h, --help`          : Show this help message
 
-## Example
-To create an ASG named `TestASG` with custom settings:
-
-```bash
-./asg_demo.sh --asg-name "TestASG" --instance-type "t3.medium" --min-size 2 --max-size 6 --desired 3
-```
-
 ## How It Works
 1. **Creates a Launch Template**
    - Defines the AMI, instance type, and tags.
