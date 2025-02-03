@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+# Default values
+ASG_NAME="MyAutoScalingGroup"
+LAUNCH_TEMPLATE_NAME="MyLaunchTemplate"
+INSTANCE_TYPE="t2.micro"
+IMAGE_ID="ami-12345678"  # Replace with a valid AMI ID
+MIN_SIZE=2
+MAX_SIZE=5
+DESIRED_CAPACITY=2
+SUBNETS="subnet-xxxxx,subnet-yyyy"
+
+# Help menu
+function show_help {
+  cat <<EOF
+Usage: $0 [OPTIONS]
+
+Options:
+  -a, --asg-name       Set the Auto Scaling Group name (default: $ASG_NAME)
+  -t, --template-name  Set the Launch Template name (default: $LAUNCH_TEMPLATE_NAME)
+  -i, --instance-type  Set the EC2 instance type (default: $INSTANCE_TYPE)
+  -m, --min-size       Set the minimum number of instances (default: $MIN_SIZE)
+  -x, --max-size       Set the maximum number of instances (default: $MAX_SIZE)
+  -d, --desired        Set the desired number of instances (default: $DESIRED_CAPACITY)
+  -s, --subnets        Set the subnets (default: $SUBNETS)
+  -h, --help           Show this help message
+
+Example:
+  $0 --asg-name "TestASG" --instance-type "t3.micro" --min-size 1 --max-size 3 --desired 2
+EOF
+}
+
+# Parse CLI arguments
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    -a|--asg-name) ASG_NAME="$2"; shift ;;
+    -t|--template-name) LAUNCH_TEMPLATE_NAME="$2"; shift ;;
+    -i|--instance-type) INSTANCE_TYPE="$2"; shift ;;
+    -m|--min-size) MIN_SIZE="$2"; shift ;;
+    -x|--max-size) MAX_SIZE="$2"; shift ;;
+    -d|--desired) DESIRED_CAPACITY="$2"; shift ;;
+    -s|--subnets) SUBNETS="$2"; shift ;;
+    -h|--help) show_help; exit 0 ;;
+    *) echo "Unknown option: $1"; show_help; exit 1 ;;
+  esac
+  shift
+done
+
+# Step 1: Create a Launch Template
+aws ec2 create-launch-template \
+  --cli-input-yaml file://lauch-template.yaml
+
+echo "Launch Template '$LAUNCH_TEMPLATE_NAME' created."
+
+# Step 2: Create an Auto Scaling Group
+aws autoscaling create-auto-scaling-group \
+    --auto-scaling-group-name "$ASG_NAME" \
+    --launch-template LaunchTemplateName="$LAUNCH_TEMPLATE_NAME",Version='$Latest' \
+    --min-size "$MIN_SIZE" --max-size "$MAX_SIZE" --desired-capacity "$DESIRED_CAPACITY" \
+    --vpc-zone-identifier "$SUBNETS"
+
+echo "Auto Scaling Group '$ASG_NAME' created!"

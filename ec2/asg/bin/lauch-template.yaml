@@ -1,0 +1,10 @@
+LaunchTemplateName: MyLaunchTemplate
+VersionDescription: Initial version
+LaunchTemplateData:
+  ImageId: ami-12345678
+  InstanceType: t2.micro
+  TagSpecifications:
+    - ResourceType: instance
+      Tags:
+        - Key: Name
+          Value: MyASG-instance
