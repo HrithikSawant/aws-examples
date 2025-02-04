@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Variables
+ASG_NAME="MyAutoScalingGroup"
+
+# Set Health Check Type
+aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME \
+    --health-check-type "EC2" --health-check-grace-period 300
+
+echo "ASG Health Check Configured!"
