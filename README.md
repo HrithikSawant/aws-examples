@@ -11,6 +11,7 @@ This repository contains a collection of AWS service examples and use cases, dem
 - **[IAM](https://github.com/HrithikSawant/aws-examples/blob/main/iam/polp/README.md)**
 Demonstration of IAM example.
 - **[EC2](https://github.com/HrithikSawant/aws-examples/blob/main/ec2/README.md)** Example of EC2
+- **[STS](https://github.com/HrithikSawant/aws-examples/blob/main/api/sts/README.md)** Example of AWS STS
 
 ## Prerequisites
 
