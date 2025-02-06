@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# Variables
+ASG_NAME="MyAutoScalingGroup"
+
+# Create Simple Scaling Policy
+aws autoscaling put-scaling-policy --auto-scaling-group-name $ASG_NAME \
+    --policy-name "SimpleScaleOut" --scaling-adjustment 1 \
+    --adjustment-type "ChangeInCapacity"
+
+echo "Simple Scaling Policy Applied!"
