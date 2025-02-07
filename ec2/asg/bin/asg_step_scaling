@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# Variables
+ASG_NAME="MyAutoScalingGroup"
+
+# Create Step Scaling Policy
+aws autoscaling put-scaling-policy --auto-scaling-group-name $ASG_NAME \
+    --policy-name "StepScaleOut" --policy-type "StepScaling" \
+    --metric-aggregation-type "Average" --step-adjustments '[
+        {"MetricIntervalLowerBound": 0, "ScalingAdjustment": 1},
+        {"MetricIntervalLowerBound": 5, "ScalingAdjustment": 2}
+    ]'
+
+echo "Step Scaling Policy Applied!"
