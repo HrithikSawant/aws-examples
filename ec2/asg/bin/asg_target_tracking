@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# Variables
+ASG_NAME="MyAutoScalingGroup"
+
+# Create Target Tracking Policy
+aws autoscaling put-scaling-policy --auto-scaling-group-name $ASG_NAME \
+    --policy-name "TargetTracking" --policy-type "TargetTrackingScaling" \
+    --target-tracking-configuration '{
+        "PredefinedMetricSpecification": {
+            "PredefinedMetricType": "ASGAverageCPUUtilization"
+        },
+        "TargetValue": 50.0
+    }'
+
+echo "Target Tracking Scaling Policy Applied!"
