@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# Variables
+ASG_NAME="MyAutoScalingGroup"
+
+# Create Predictive Scaling Policy
+aws autoscaling put-scaling-policy --auto-scaling-group-name $ASG_NAME \
+    --policy-name "PredictiveScaling" --policy-type "PredictiveScaling" \
+    --predictive-scaling-configuration '{
+        "MetricSpecifications": [{
+            "PredefinedMetricPairSpecification": {
+                "PredefinedMetricType": "ASGTotalCPUUtilization"
+            },
+            "TargetValue": 40.0
+        }]
+    }'
+
+echo "Predictive Scaling Policy Applied!"
