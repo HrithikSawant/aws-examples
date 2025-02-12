@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Variables
+ASG_NAME="MyAutoScalingGroup"
+
+# Set Termination Policy
+aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME \
+    --termination-policies "OldestLaunchConfiguration"
+
+echo "ASG Termination Policy Configured!"
