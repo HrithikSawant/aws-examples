@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# Read Hosted Zone ID from file
+if [ ! -f hosted_zone_id.txt ]; then
+    echo "Error: hosted_zone_id.txt not found!"
+    exit 1
+fi
+
+HOSTED_ZONE_ID=$(cat hosted_zone_id.txt)
+
+# Delete the Hosted Zone
+echo "Deleting hosted zone: $HOSTED_ZONE_ID..."
+aws route53 delete-hosted-zone --id "$HOSTED_ZONE_ID"
+
+echo "Hosted Zone Deleted: $HOSTED_ZONE_ID"
+rm hosted_zone_id.txt
+echo "Cleaned up stored Hosted Zone ID."
